@@ -1,0 +1,63 @@
+{
+  "results": [
+    {
+      "candidate_name": "JPMC_Akshaya_Resume",
+      "file_name": "15d80f620c144943a481ac9f669d826e_JPMC_Akshaya_Resume.pdf",
+      "tfidf_score": 4.98,
+      "semantic_similarity": 35.51,
+      "overall_match": 17.19,
+      "resume_strength_score": 17.74,
+      "job_required_experience_years": 7,
+      "candidate_experience_years": 0,
+      "experience_match_percentage": 0.0,
+      "extracted_skills": [
+        "css",
+        "git",
+        "html",
+        "java",
+        "javascript",
+        "machine learning",
+        "mongodb",
+        "node.js",
+        "python",
+        "react",
+        "rest api",
+        "sql",
+        "tailwind",
+        "typescript"
+      ],
+      "matched_skills": [],
+      "missing_skills": [],
+      "skill_match_percentage": 0.0,
+      "matched_keywords": [
+        "technical",
+        "skills",
+        "development",
+        "guidance",
+        "projects",
+        "provides",
+        "experience",
+        "designing",
+        "knowledge"
+      ],
+      "suggestions": [
+        "Ensure these JD keywords appear naturally in your resume summary: and, technical, development, skills., provides, designing."
+      ],
+      "explanation": "JPMC_Akshaya_Resume ranks here due to overall strong relevance, but needs clearer experience details. Final score: 17.2%",
+      "rank": 1
+    }
+  ],
+  "analytics": {
+    "top_candidates": [
+      {
+        "candidate_name": "JPMC_Akshaya_Resume",
+        "overall_match": 17.19,
+        "file_name": "15d80f620c144943a481ac9f669d826e_JPMC_Akshaya_Resume.pdf"
+      }
+    ],
+    "average_overall_score": 17.19,
+    "average_semantic_score": 35.51,
+    "skill_distribution": [],
+    "total_candidates": 1
+  }
+}
