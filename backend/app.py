@@ -18,11 +18,10 @@ from utils.similarity import (
     compute_similarity_scores,
     compute_semantic_similarity_scores,
     extract_keyword_overlap,
-    extract_skills,
     extract_years_of_experience,
     get_experience_match_percentage,
-    get_skill_match_details,
 )
+from utils.skills import extract_skills, get_skill_match_details
 from utils.suggestions import (
     build_candidate_explanation,
     generate_improvement_plan,

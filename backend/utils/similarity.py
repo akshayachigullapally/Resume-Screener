@@ -9,35 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
-SKILL_PATTERNS = {
-    "python": ["python"],
-    "java": ["java"],
-    "javascript": ["javascript", "js"],
-    "typescript": ["typescript", "ts"],
-    "react": ["react", "reactjs"],
-    "node.js": ["node", "nodejs", "node.js"],
-    "flask": ["flask"],
-    "django": ["django"],
-    "sql": ["sql", "mysql", "postgresql", "postgres"],
-    "mongodb": ["mongodb", "mongo"],
-    "machine learning": ["machine learning", "ml"],
-    "deep learning": ["deep learning", "neural network", "neural networks"],
-    "nlp": ["nlp", "natural language processing"],
-    "scikit-learn": ["scikit learn", "scikit-learn", "sklearn"],
-    "pandas": ["pandas"],
-    "numpy": ["numpy"],
-    "docker": ["docker"],
-    "kubernetes": ["kubernetes", "k8s"],
-    "aws": ["aws", "amazon web services"],
-    "azure": ["azure"],
-    "git": ["git", "github", "gitlab"],
-    "rest api": ["rest api", "restful", "api"],
-    "html": ["html"],
-    "css": ["css"],
-    "tailwind": ["tailwind"],
-    "bootstrap": ["bootstrap"],
-}
+from .skills import extract_skills, get_skill_match_details
 
 
 SENTENCE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
@@ -83,31 +55,6 @@ def combine_similarity_scores(
         weights.append(round(float(np.clip(combined, 0.0, 1.0)), 4))
     return weights
 
-
-def extract_skills(text: str) -> list[str]:
-    lowered = text.lower()
-    found: list[str] = []
-    for canonical_skill, aliases in SKILL_PATTERNS.items():
-        for alias in aliases:
-            if re.search(rf"\b{re.escape(alias)}\b", lowered):
-                found.append(canonical_skill)
-                break
-    return sorted(set(found))
-
-
-def get_skill_match_details(job_skills: list[str], resume_skills: list[str]) -> dict:
-    job_set = set(job_skills)
-    resume_set = set(resume_skills)
-
-    matched = sorted(job_set.intersection(resume_set))
-    missing = sorted(job_set.difference(resume_set))
-    match_percentage = round((len(matched) / len(job_set)) * 100, 2) if job_set else 0.0
-
-    return {
-        "matched_skills": matched,
-        "missing_skills": missing,
-        "skill_match_percentage": match_percentage,
-    }
 
 
 def extract_keyword_overlap(job_description: str, resume_text: str, top_n: int = 12) -> list[str]:

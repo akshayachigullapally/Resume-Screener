@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, List
 
-from .similarity import extract_keyword_overlap
+from .skills import extract_skills
 
 SECTION_KEYWORDS = {
     "experience": ["experience", "employment", "work history"],
@@ -13,6 +14,16 @@ SECTION_KEYWORDS = {
     "education": ["education", "academics", "degree"],
     "achievements": ["achievement", "accomplishment", "impact"],
 }
+
+SKILL_PROJECT_HINTS = {
+    "machine learning": "Include projects related to machine learning to mirror the JD.",
+    "data science": "Discuss data science case studies that relate to the role.",
+    "aws": "Add cloud deployments or migrations completed on AWS.",
+    "azure": "Document Azure-based solutions you have implemented.",
+    "gcp": "Mention workloads you have built or migrated on GCP.",
+}
+
+_METRIC_PATTERN = re.compile(r"(\d+%|\b\d+\s+(?:users|clients|models|projects))", re.IGNORECASE)
 
 
 def _section_present(text: str, keywords: Iterable[str]) -> bool:
@@ -27,36 +38,34 @@ def generate_resume_suggestions(
 ) -> List[str]:
     suggestions: list[str] = []
     lowered = resume_raw_text.lower()
+    job_skills = extract_skills(job_description)
+    resume_skills = extract_skills(resume_raw_text)
+    matched_skills = sorted(set(job_skills).intersection(resume_skills))
 
-    if missing_skills:
-        suggestions.append(
-            "Highlight or add experience with: " + ", ".join(missing_skills[:8])
-        )
+    for skill in missing_skills[:5]:
+        display = skill.title()
+        suggestions.append(f"Add experience with {display} (required in job description).")
+        hint = SKILL_PROJECT_HINTS.get(skill)
+        if hint:
+            suggestions.append(hint)
 
-    if not _section_present(lowered, SECTION_KEYWORDS["projects"]):
-        suggestions.append("Add a projects section to show how you applied core skills.")
+    if matched_skills:
+        highlight = ", ".join(skill.title() for skill in matched_skills[:3])
+        suggestions.append(f"Highlight skills like {highlight} more clearly in your resume.")
 
-    if not _section_present(lowered, SECTION_KEYWORDS["achievements"]):
-        suggestions.append("Quantify achievements (metrics, percentages, savings, impact).")
+    if not _METRIC_PATTERN.search(resume_raw_text):
+        suggestions.append("Add measurable achievements (e.g., improved accuracy by 20%).")
 
-    if not _section_present(lowered, SECTION_KEYWORDS["education"]):
-        suggestions.append("Include an education section with degree, university, and graduation year.")
+    if missing_skills and not _section_present(lowered, SECTION_KEYWORDS["projects"]):
+        focus_skill = missing_skills[0].title()
+        suggestions.append(f"Include a project that demonstrates {focus_skill} in practice.")
 
-    if "team" not in lowered and "lead" not in lowered:
-        suggestions.append("Mention collaboration or leadership highlights to show soft skills.")
-
-    jd_keywords = extract_keyword_overlap(job_description.lower(), resume_raw_text.lower(), top_n=6)
-    if jd_keywords:
-        suggestions.append(
-            f"Ensure these JD keywords appear naturally in your resume summary: {', '.join(jd_keywords)}."
-        )
-
-    if "summary" not in lowered and "objective" not in lowered:
-        suggestions.append("Add a short professional summary tailored to the job description.")
+    if not _section_present(lowered, SECTION_KEYWORDS["skills"]):
+        suggestions.append("Create a dedicated skills section so recruiters can scan key tools quickly.")
 
     deduped: list[str] = []
     for suggestion in suggestions:
-        if suggestion not in deduped:
+        if suggestion and suggestion not in deduped:
             deduped.append(suggestion)
     return deduped[:6]
 

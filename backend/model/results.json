@@ -2,48 +2,59 @@
   "results": [
     {
       "candidate_name": "JPMC_Akshaya_Resume",
-      "file_name": "15d80f620c144943a481ac9f669d826e_JPMC_Akshaya_Resume.pdf",
-      "tfidf_score": 4.98,
-      "semantic_similarity": 35.51,
-      "overall_match": 17.19,
-      "resume_strength_score": 17.74,
-      "job_required_experience_years": 7,
+      "file_name": "559e771effe44cdebb89c0781a24e5f7_JPMC_Akshaya_Resume.pdf",
+      "tfidf_score": 26.31,
+      "semantic_similarity": 49.26,
+      "overall_match": 35.49,
+      "resume_strength_score": 43.11,
+      "job_required_experience_years": 4,
       "candidate_experience_years": 0,
       "experience_match_percentage": 0.0,
       "extracted_skills": [
+        "c++",
         "css",
         "git",
         "html",
         "java",
         "javascript",
-        "machine learning",
-        "mongodb",
-        "node.js",
+        "node",
         "python",
-        "react",
-        "rest api",
-        "sql",
-        "tailwind",
-        "typescript"
+        "react"
       ],
-      "matched_skills": [],
-      "missing_skills": [],
-      "skill_match_percentage": 0.0,
+      "matched_skills": [
+        "git",
+        "javascript",
+        "node",
+        "react"
+      ],
+      "missing_skills": [
+        "aws",
+        "docker",
+        "sql"
+      ],
+      "skill_match_percentage": 57.14,
       "matched_keywords": [
-        "technical",
+        "stack",
         "skills",
+        "react",
+        "github",
+        "full",
+        "software",
         "development",
-        "guidance",
-        "projects",
-        "provides",
-        "experience",
-        "designing",
-        "knowledge"
+        "next",
+        "node",
+        "express",
+        "mongodb",
+        "ensure"
       ],
       "suggestions": [
-        "Ensure these JD keywords appear naturally in your resume summary: and, technical, development, skills., provides, designing."
+        "Add experience with Aws (required in job description).",
+        "Add cloud deployments or migrations completed on AWS.",
+        "Add experience with Docker (required in job description).",
+        "Add experience with Sql (required in job description).",
+        "Highlight skills like Git, Javascript, Node more clearly in your resume."
       ],
-      "explanation": "JPMC_Akshaya_Resume ranks here due to overall strong relevance, but needs clearer experience details. Final score: 17.2%",
+      "explanation": "JPMC_Akshaya_Resume ranks here due to strong overlap in required skills (git, javascript, node, react), but should emphasize aws, docker, sql; needs clearer experience details. Final score: 35.5%",
       "rank": 1
     }
   ],
@@ -51,13 +62,30 @@
     "top_candidates": [
       {
         "candidate_name": "JPMC_Akshaya_Resume",
-        "overall_match": 17.19,
-        "file_name": "15d80f620c144943a481ac9f669d826e_JPMC_Akshaya_Resume.pdf"
+        "overall_match": 35.49,
+        "file_name": "559e771effe44cdebb89c0781a24e5f7_JPMC_Akshaya_Resume.pdf"
       }
     ],
-    "average_overall_score": 17.19,
-    "average_semantic_score": 35.51,
-    "skill_distribution": [],
+    "average_overall_score": 35.49,
+    "average_semantic_score": 49.26,
+    "skill_distribution": [
+      {
+        "skill": "git",
+        "count": 1
+      },
+      {
+        "skill": "javascript",
+        "count": 1
+      },
+      {
+        "skill": "node",
+        "count": 1
+      },
+      {
+        "skill": "react",
+        "count": 1
+      }
+    ],
     "total_candidates": 1
   }
 }
