@@ -83,7 +83,7 @@ def _detect_section(line: str) -> str | None:
     return None
 
 
-def extract_section_texts(text: str) -> Dict[str, str]:
+def extract_resume_sections(text: str) -> Dict[str, str]:
     sections: Dict[str, List[str]] = {name: [] for name in SECTION_ALIASES}
     current = None
     for raw_line in text.splitlines():
@@ -97,6 +97,12 @@ def extract_section_texts(text: str) -> Dict[str, str]:
         if current:
             sections[current].append(line)
     return {name: "\n".join(lines).strip() for name, lines in sections.items()}
+
+
+def extract_section_texts(text: str) -> Dict[str, str]:
+    """Backward compatible alias for resume section extraction."""
+
+    return extract_resume_sections(text)
 
 
 def section_present(text: str, section: str) -> bool:
@@ -138,12 +144,18 @@ def score_resume_sections(
     degree_bonus = 30 if any(keyword in education_text.lower() for keyword in DEGREE_KEYWORDS) else 0
     education_score = round(min((education_depth * 70) + degree_bonus, 100), 2)
 
-    return {
+    score_payload: Dict[str, Dict[str, float]] = {
         "skills": {"score": skills_score},
         "experience": {"score": experience_score},
         "projects": {"score": projects_score},
         "education": {"score": education_score},
     }
+
+    score_payload["skills_score"] = {"score": skills_score}
+    score_payload["experience_score"] = {"score": experience_score}
+    score_payload["project_score"] = {"score": projects_score}
+
+    return score_payload
 
 
 def predict_role_fit(

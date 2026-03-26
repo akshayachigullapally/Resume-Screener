@@ -2,7 +2,7 @@
   "results": [
     {
       "candidate_name": "JPMC_Akshaya_Resume",
-      "file_name": "5ddece27ccc54cd2beb8590e801466c0_JPMC_Akshaya_Resume.pdf",
+      "file_name": "bb5a31063bcf48beac7ae7d85e1f3f0f_JPMC_Akshaya_Resume.pdf",
       "tfidf_score": 26.31,
       "semantic_similarity": 49.26,
       "overall_match": 50.35,
@@ -67,6 +67,15 @@
         },
         "education": {
           "score": 73.17
+        },
+        "skills_score": {
+          "score": 63.57
+        },
+        "experience_score": {
+          "score": 0.0
+        },
+        "project_score": {
+          "score": 100
         }
       },
       "recommended_role": {
@@ -102,7 +111,7 @@
       {
         "candidate_name": "JPMC_Akshaya_Resume",
         "overall_match": 50.35,
-        "file_name": "5ddece27ccc54cd2beb8590e801466c0_JPMC_Akshaya_Resume.pdf"
+        "file_name": "bb5a31063bcf48beac7ae7d85e1f3f0f_JPMC_Akshaya_Resume.pdf"
       }
     ],
     "average_overall_score": 50.35,
