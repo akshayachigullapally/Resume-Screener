@@ -56,6 +56,11 @@ const getScoreColor = (value) => {
 };
 
 const formatPercent = (value) => Number(value || 0).toFixed(1);
+const formatSectionLabel = (label = "") =>
+  label
+    .split(" ")
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ""))
+    .join(" ");
 
 const MetricBar = ({ label, value }) => {
   const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
@@ -845,7 +850,28 @@ function App() {
                       <Chip label={`Overall: ${formatPercent(activeCandidate.overall_match)}%`} sx={{ bgcolor: "#e2f8f1", color: "#1a695e", fontWeight: 700 }} />
                       <Chip label={`Semantic: ${formatPercent(activeCandidate.semantic_similarity)}%`} sx={{ bgcolor: "#fff1db", color: "#a66b05", fontWeight: 700 }} />
                       <Chip label={`TF-IDF: ${formatPercent(activeCandidate.tfidf_score)}%`} sx={{ bgcolor: "#e6f1ff", color: "#1c4e8e", fontWeight: 700 }} />
+                      {activeCandidate?.recommended_role?.role && (
+                        <Chip
+                          label={`Best suited: ${activeCandidate.recommended_role.role}`}
+                          sx={{ bgcolor: "rgba(33, 185, 123, 0.18)", color: "#127055", fontWeight: 700 }}
+                        />
+                      )}
                     </Stack>
+
+                    {activeCandidate?.section_scores && (
+                      <Box sx={{ mb: 1.2 }}>
+                        <Typography sx={{ fontWeight: 700, color: "#1c4c53", mb: 0.6 }}>Section Scores</Typography>
+                        <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
+                          {Object.entries(activeCandidate.section_scores).map(([section, data]) => (
+                            <Chip
+                              key={`active-${section}`}
+                              label={`${formatSectionLabel(section)}: ${formatPercent(data?.score || 0)}%`}
+                              sx={{ bgcolor: "rgba(11, 58, 63, 0.08)", color: "#1c5157", fontWeight: 600 }}
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
                     <Typography sx={{ fontWeight: 700, color: "#1c4c53", mb: 0.6 }}>Missing Skills</Typography>
                     <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap" sx={{ mb: 1.2 }}>
                       {(activeCandidate.missing_skills || []).length ? (
@@ -891,6 +917,8 @@ function App() {
                   const skillMatch = Number(candidate.skill_match_percentage || 0);
                   const isActive = index === activeCandidateIndex;
                   const borderColor = isActive ? getScoreColor(overallScore) : "rgba(11, 27, 29, 0.12)";
+                  const sectionScores = candidate.section_scores || {};
+                  const roleFit = candidate.recommended_role || {};
                   const jobSkillsDetected = jobSkills.length > 0;
                   return (
                     <Card
@@ -932,7 +960,30 @@ function App() {
                           <Chip size="small" label={`Skill Match: ${skillMatch}%`} sx={{ bgcolor: "#dff7ef", color: "#1a6b5f", fontWeight: 700 }} />
                           <Chip size="small" label={`Resume Strength: ${strengthScore}%`} sx={{ bgcolor: "#e7f2f8", color: "#285f7c", fontWeight: 700 }} />
                           <Chip size="small" label={`Experience Match: ${expMatch}%`} sx={{ bgcolor: "#fff2d7", color: "#895e12", fontWeight: 700 }} />
+                          {roleFit?.role && (
+                            <Chip
+                              size="small"
+                              label={`Best suited: ${roleFit.role}${roleFit.confidence ? ` (${formatPercent(roleFit.confidence)}% conf.)` : ""}`}
+                              sx={{ bgcolor: "rgba(33, 185, 123, 0.18)", color: "#127055", fontWeight: 700 }}
+                            />
+                          )}
                         </Stack>
+
+                        {Object.keys(sectionScores).length > 0 && (
+                          <Box sx={{ mb: 1.4 }}>
+                            <Typography sx={{ color: "#1c4c53", fontWeight: 700, mb: 0.4 }}>Section Scores</Typography>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={0.8} useFlexGap flexWrap="wrap">
+                              {Object.entries(sectionScores).map(([section, data]) => (
+                                <Chip
+                                  key={`${candidate.file_name}-${section}`}
+                                  size="small"
+                                  label={`${formatSectionLabel(section)}: ${formatPercent(data?.score || 0)}%`}
+                                  sx={{ bgcolor: "rgba(11, 58, 63, 0.08)", color: "#1c5157", fontWeight: 600 }}
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
 
                         <Box sx={{ mb: 1.2 }}>
                           <Typography sx={{ color: "#1c4c53", fontWeight: 700, mb: 0.6 }}>Matched Skills</Typography>

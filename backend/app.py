@@ -13,7 +13,6 @@ from utils.model_manager import load_or_train_vectorizer
 from utils.parser import extract_text_from_file
 from utils.preprocessing import preprocess_text
 from utils.similarity import (
-    combine_similarity_scores,
     compute_resume_strength_score,
     compute_similarity_scores,
     compute_semantic_similarity_scores,
@@ -22,6 +21,8 @@ from utils.similarity import (
     get_experience_match_percentage,
 )
 from utils.skills import extract_skills, get_skill_match_details
+from utils.sections import extract_section_texts, predict_role_fit, score_resume_sections
+from utils.scoring import compute_weighted_overall_score
 from utils.suggestions import (
     build_candidate_explanation,
     generate_improvement_plan,
@@ -236,11 +237,10 @@ def analyze_resumes():
     raw_texts = [item["raw_text"] for item in resumes_data]
     tfidf_scores = compute_similarity_scores(vectorizer, processed_jd, resume_texts)
     semantic_scores = compute_semantic_similarity_scores(job_description, raw_texts)
-    combined_scores = combine_similarity_scores(tfidf_scores, semantic_scores)
 
     ranked_results = []
-    for item, tfidf_score, semantic_score, combined_score in zip(
-        resumes_data, tfidf_scores, semantic_scores, combined_scores
+    for item, tfidf_score, semantic_score in zip(
+        resumes_data, tfidf_scores, semantic_scores
     ):
         candidate_name = clean_candidate_name(item["filename"])
         resume_skills = extract_skills(item["raw_text"])
@@ -251,18 +251,26 @@ def analyze_resumes():
 
         similarity_percentage = round(float(tfidf_score) * 100, 2)
         semantic_percentage = round(float(semantic_score) * 100, 2)
-        overall_match_percentage = round(float(combined_score) * 100, 2)
+        suggestions = generate_resume_suggestions(
+            job_description,
+            item["raw_text"],
+            skill_details["missing_skills"],
+        )
+        resume_sections = extract_section_texts(item["raw_text"])
+        section_scores = score_resume_sections(
+            resume_sections,
+            skill_details["skill_match_percentage"],
+            experience_match,
+            resume_skills,
+        )
+        role_fit = predict_role_fit(resume_skills, resume_sections, item["raw_text"])
+        score_breakdown = compute_weighted_overall_score(section_scores, semantic_percentage)
+        overall_match_percentage = score_breakdown["overall_score"]
         strength_score = compute_resume_strength_score(
             overall_match_percentage,
             skill_details["skill_match_percentage"],
             experience_match,
             item["raw_text"],
-        )
-
-        suggestions = generate_resume_suggestions(
-            job_description,
-            item["raw_text"],
-            skill_details["missing_skills"],
         )
         explanation = build_candidate_explanation(
             candidate_name,
@@ -292,6 +300,9 @@ def analyze_resumes():
                 "matched_keywords": matched_keywords,
                 "suggestions": suggestions,
                 "explanation": explanation,
+                "section_scores": section_scores,
+                "recommended_role": role_fit,
+                "score_breakdown": score_breakdown,
             }
         )
 

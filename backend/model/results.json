@@ -2,11 +2,11 @@
   "results": [
     {
       "candidate_name": "JPMC_Akshaya_Resume",
-      "file_name": "559e771effe44cdebb89c0781a24e5f7_JPMC_Akshaya_Resume.pdf",
+      "file_name": "5ddece27ccc54cd2beb8590e801466c0_JPMC_Akshaya_Resume.pdf",
       "tfidf_score": 26.31,
       "semantic_similarity": 49.26,
-      "overall_match": 35.49,
-      "resume_strength_score": 43.11,
+      "overall_match": 50.35,
+      "resume_strength_score": 49.8,
       "job_required_experience_years": 4,
       "candidate_experience_years": 0,
       "experience_match_percentage": 0.0,
@@ -54,7 +54,46 @@
         "Add experience with Sql (required in job description).",
         "Highlight skills like Git, Javascript, Node more clearly in your resume."
       ],
-      "explanation": "JPMC_Akshaya_Resume ranks here due to strong overlap in required skills (git, javascript, node, react), but should emphasize aws, docker, sql; needs clearer experience details. Final score: 35.5%",
+      "explanation": "JPMC_Akshaya_Resume ranks here due to strong overlap in required skills (git, javascript, node, react), but should emphasize aws, docker, sql; needs clearer experience details. Final score: 50.4%",
+      "section_scores": {
+        "skills": {
+          "score": 63.57
+        },
+        "experience": {
+          "score": 0.0
+        },
+        "projects": {
+          "score": 100
+        },
+        "education": {
+          "score": 73.17
+        }
+      },
+      "recommended_role": {
+        "role": "Backend Developer",
+        "confidence": 30.0,
+        "alternatives": [
+          {
+            "role": "Frontend Developer",
+            "score": 10
+          },
+          {
+            "role": "Full Stack Developer",
+            "score": 9
+          },
+          {
+            "role": "ML Engineer",
+            "score": 4
+          }
+        ]
+      },
+      "score_breakdown": {
+        "overall_score": 50.35,
+        "skills_score": 63.57,
+        "experience_score": 0.0,
+        "project_score": 100.0,
+        "semantic_score": 49.26
+      },
       "rank": 1
     }
   ],
@@ -62,11 +101,11 @@
     "top_candidates": [
       {
         "candidate_name": "JPMC_Akshaya_Resume",
-        "overall_match": 35.49,
-        "file_name": "559e771effe44cdebb89c0781a24e5f7_JPMC_Akshaya_Resume.pdf"
+        "overall_match": 50.35,
+        "file_name": "5ddece27ccc54cd2beb8590e801466c0_JPMC_Akshaya_Resume.pdf"
       }
     ],
-    "average_overall_score": 35.49,
+    "average_overall_score": 50.35,
     "average_semantic_score": 49.26,
     "skill_distribution": [
       {

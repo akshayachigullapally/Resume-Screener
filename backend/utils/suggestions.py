@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, List
+from typing import List
 
 from .skills import extract_skills
+from .sections import section_present
 
 SECTION_KEYWORDS = {
     "experience": ["experience", "employment", "work history"],
@@ -25,10 +26,6 @@ SKILL_PROJECT_HINTS = {
 
 _METRIC_PATTERN = re.compile(r"(\d+%|\b\d+\s+(?:users|clients|models|projects))", re.IGNORECASE)
 
-
-def _section_present(text: str, keywords: Iterable[str]) -> bool:
-    lowered = text.lower()
-    return any(keyword in lowered for keyword in keywords)
 
 
 def generate_resume_suggestions(
@@ -56,11 +53,11 @@ def generate_resume_suggestions(
     if not _METRIC_PATTERN.search(resume_raw_text):
         suggestions.append("Add measurable achievements (e.g., improved accuracy by 20%).")
 
-    if missing_skills and not _section_present(lowered, SECTION_KEYWORDS["projects"]):
+    if missing_skills and not section_present(resume_raw_text, "projects"):
         focus_skill = missing_skills[0].title()
         suggestions.append(f"Include a project that demonstrates {focus_skill} in practice.")
 
-    if not _section_present(lowered, SECTION_KEYWORDS["skills"]):
+    if not section_present(resume_raw_text, "skills"):
         suggestions.append("Create a dedicated skills section so recruiters can scan key tools quickly.")
 
     deduped: list[str] = []
@@ -76,8 +73,8 @@ def generate_improvement_plan(
     missing_skills: List[str],
 ) -> dict:
     section_gaps = {
-        section: _section_present(resume_text, keywords)
-        for section, keywords in SECTION_KEYWORDS.items()
+        section: section_present(resume_text, section)
+        for section in SECTION_KEYWORDS
     }
 
     actionable = generate_resume_suggestions(job_description, resume_text, missing_skills)
