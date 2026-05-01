@@ -1,0 +1,31 @@
+{
+  "dataset_rows": 169,
+  "labels": [
+    "Advocate",
+    "Arts",
+    "Automation Testing",
+    "Blockchain",
+    "Business Analyst",
+    "Civil Engineer",
+    "Data Science",
+    "Database",
+    "DevOps Engineer",
+    "DotNet Developer",
+    "ETL Developer",
+    "Electrical Engineering",
+    "HR",
+    "Hadoop",
+    "Health and fitness",
+    "Java Developer",
+    "Mechanical Engineer",
+    "Network Security Engineer",
+    "Operations Manager",
+    "PMO",
+    "Python Developer",
+    "SAP Developer",
+    "Sales",
+    "Testing",
+    "Web Designing"
+  ],
+  "knn_neighbors": 7
+}

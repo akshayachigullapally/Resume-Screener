@@ -9,11 +9,13 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-from utils.model_manager import load_or_train_vectorizer
+from utils.ml_pipeline import load_or_train_models, predict_rank_score, predict_role
+from utils.name_extractor import extract_candidate_name
 from utils.parser import extract_text_from_file
 from utils.preprocessing import preprocess_text
 from utils.similarity import (
     compute_resume_strength_score,
+    compute_pairwise_semantic_similarity,
     compute_similarity_scores,
     compute_semantic_similarity_scores,
     extract_keyword_overlap,
@@ -21,7 +23,7 @@ from utils.similarity import (
     get_experience_match_percentage,
 )
 from utils.skills import extract_skills, get_skill_match_details
-from utils.sections import extract_section_texts, predict_role_fit, score_resume_sections
+from utils.sections import extract_section_texts, score_resume_sections
 from utils.scoring import compute_weighted_overall_score
 from utils.suggestions import (
     build_candidate_explanation,
@@ -75,17 +77,25 @@ def save_results(results, analytics):
 
 RESULTS_CACHE, ANALYTICS_CACHE = load_previous_results()
 ADVISOR_TEXT_CACHE = {}
-VECTORIZER = None
+JD_CACHE = {}  # {filename: {"text": raw_text, "processed": processed_text}}
+MODEL_BUNDLE = None
+
+
+def get_model_bundle():
+    global MODEL_BUNDLE
+    if MODEL_BUNDLE is None:
+        MODEL_BUNDLE = load_or_train_models(DATASET_FILE, MODEL_DIR)
+    return MODEL_BUNDLE
 
 
 def get_vectorizer():
-    global VECTORIZER
-    if VECTORIZER is None:
-        VECTORIZER = load_or_train_vectorizer(DATASET_FILE, VECTORIZER_FILE)
-    return VECTORIZER
+    return get_model_bundle().vectorizer
 
 
-def clean_candidate_name(file_name: str) -> str:
+def clean_candidate_name(file_name: str, extracted_name: str | None = None) -> str:
+    """Return extracted name if available, otherwise clean filename."""
+    if extracted_name and extracted_name.strip():
+        return extracted_name.strip()
     stem = Path(file_name).stem
     if "_" in stem and len(stem.split("_", 1)[0]) == 32:
         return stem.split("_", 1)[1]
@@ -151,6 +161,51 @@ def upload_resumes():
     return jsonify({"message": "Upload complete.", "uploaded": uploaded, "errors": errors}), 200
 
 
+@app.post("/upload-jd")
+def upload_jd():
+    global JD_CACHE
+    if "jd_file" not in request.files:
+        return jsonify({"error": "No file provided. Use field name 'jd_file'."}), 400
+
+    jd_file = request.files["jd_file"]
+    if not jd_file or jd_file.filename == "":
+        return jsonify({"error": "Empty file."}), 400
+
+    filename = jd_file.filename or ""
+    if not allowed_file(filename):
+        return jsonify({"error": f"Invalid file type: {filename}. Allowed: PDF, DOCX"}), 400
+
+    try:
+        safe_name = secure_filename(filename)
+        unique_name = f"{uuid.uuid4().hex}_{safe_name}"
+        save_path = UPLOAD_DIR / unique_name
+        jd_file.save(save_path)
+
+        raw_text = extract_text_from_file(str(save_path))
+        processed_text = preprocess_text(raw_text)
+
+        if not processed_text:
+            return jsonify({"error": "Job description has no meaningful content."}), 400
+
+        JD_CACHE[unique_name] = {
+            "original_name": filename,
+            "text": raw_text,
+            "processed": processed_text,
+            "path": str(save_path),
+        }
+
+        return jsonify(
+            {
+                "message": "JD file uploaded.",
+                "stored_name": unique_name,
+                "original_name": filename,
+                "preview": raw_text[:200],
+            }
+        ), 200
+    except Exception as exc:
+        return jsonify({"error": f"Failed to process JD file: {exc}"}), 500
+
+
 @app.post("/analyze")
 def analyze_resumes():
     global RESULTS_CACHE, ANALYTICS_CACHE, ADVISOR_TEXT_CACHE
@@ -160,9 +215,13 @@ def analyze_resumes():
 
     job_description = payload.get("job_description") or request.form.get("job_description", "")
     job_description = job_description.strip()
+    jd_file_name = payload.get("jd_file") or ""
+
+    if jd_file_name and jd_file_name in JD_CACHE:
+        job_description = JD_CACHE[jd_file_name]["text"]
 
     if not job_description:
-        return jsonify({"error": "Job description is required."}), 400
+        return jsonify({"error": "Job description is required. Provide text or upload a JD file."}), 400
 
     incoming_files = request.files.getlist("resumes") if "resumes" in request.files else []
     new_file_names: list[str] = []
@@ -201,9 +260,10 @@ def analyze_resumes():
     required_years = extract_years_of_experience(job_description)
 
     try:
-        vectorizer = get_vectorizer()
+        bundle = get_model_bundle()
+        vectorizer = bundle.vectorizer
     except Exception as exc:
-        return jsonify({"error": f"Failed to initialize vectorizer: {exc}"}), 500
+        return jsonify({"error": f"Failed to initialize resume models: {exc}"}), 500
 
     ADVISOR_TEXT_CACHE = {}
 
@@ -224,6 +284,7 @@ def analyze_resumes():
                     "filename": file_path.name,
                     "raw_text": raw_text,
                     "resume_text": cleaned_resume_text,
+                    "extracted_name": extract_candidate_name(raw_text),
                 }
             )
             ADVISOR_TEXT_CACHE[file_path.name] = raw_text
@@ -237,17 +298,21 @@ def analyze_resumes():
     raw_texts = [item["raw_text"] for item in resumes_data]
     tfidf_scores = compute_similarity_scores(vectorizer, processed_jd, resume_texts)
     semantic_scores = compute_semantic_similarity_scores(job_description, raw_texts)
+    batch_similarity_matrix = compute_pairwise_semantic_similarity(raw_texts)
+    job_role_prediction = predict_role(bundle, job_description)
 
     ranked_results = []
-    for item, tfidf_score, semantic_score in zip(
-        resumes_data, tfidf_scores, semantic_scores
+    for index, (item, tfidf_score, semantic_score) in enumerate(
+        zip(resumes_data, tfidf_scores, semantic_scores)
     ):
-        candidate_name = clean_candidate_name(item["filename"])
+        candidate_name = clean_candidate_name(item["filename"], item.get("extracted_name"))
         resume_skills = extract_skills(item["raw_text"])
         skill_details = get_skill_match_details(job_skills, resume_skills)
 
         candidate_years = extract_years_of_experience(item["raw_text"])
         experience_match = get_experience_match_percentage(required_years, candidate_years)
+        role_prediction = predict_role(bundle, item["raw_text"])
+        rank_prediction = predict_rank_score(bundle, item["raw_text"])
 
         similarity_percentage = round(float(tfidf_score) * 100, 2)
         semantic_percentage = round(float(semantic_score) * 100, 2)
@@ -263,7 +328,6 @@ def analyze_resumes():
             experience_match,
             resume_skills,
         )
-        role_fit = predict_role_fit(resume_skills, resume_sections, item["raw_text"])
         score_breakdown = compute_weighted_overall_score(section_scores, semantic_percentage)
         overall_match_percentage = score_breakdown["overall_score"]
         strength_score = compute_resume_strength_score(
@@ -281,6 +345,27 @@ def analyze_resumes():
             experience_match,
         )
         matched_keywords = extract_keyword_overlap(processed_jd, item["resume_text"])
+        peer_summary = None
+        if batch_similarity_matrix.size and len(resumes_data) > 1:
+            peer_scores = batch_similarity_matrix[index].copy()
+            peer_scores[index] = -1.0
+            peer_index = int(peer_scores.argmax())
+            if peer_scores[peer_index] >= 0:
+                peer_summary = {
+                    "candidate_name": clean_candidate_name(resumes_data[peer_index]["filename"]),
+                    "file_name": resumes_data[peer_index]["filename"],
+                    "similarity": round(float(peer_scores[peer_index]) * 100, 2),
+                }
+
+        final_rank_score = round(
+            (
+                overall_match_percentage * 0.55
+                + rank_prediction * 0.25
+                + role_prediction["confidence"] * 0.1
+                + role_prediction["knn_role_probability"] * 0.1
+            ),
+            2,
+        )
 
         ranked_results.append(
             {
@@ -301,16 +386,26 @@ def analyze_resumes():
                 "suggestions": suggestions,
                 "explanation": explanation,
                 "section_scores": section_scores,
-                "recommended_role": role_fit,
+                "recommended_role": {
+                    "role": role_prediction["role"],
+                    "confidence": role_prediction["confidence"],
+                    "alternatives": role_prediction["alternatives"],
+                },
+                "svm_role_probabilities": role_prediction["svm_role_probabilities"],
+                "knn_role_probability": role_prediction["knn_role_probability"],
+                "knn_role_probabilities": role_prediction["knn_role_probabilities"],
+                "predicted_rank_score": rank_prediction,
+                "final_rank_score": final_rank_score,
+                "nearest_peer": peer_summary,
                 "score_breakdown": score_breakdown,
             }
         )
 
     ranked_results.sort(
         key=lambda record: (
+            record["final_rank_score"],
             record["overall_match"],
             record["skill_match_percentage"],
-            record["resume_strength_score"],
         ),
         reverse=True,
     )
@@ -327,11 +422,14 @@ def analyze_resumes():
         semantic_total += record["semantic_similarity"]
 
     analytics = {
+        "job_role_prediction": job_role_prediction,
         "top_candidates": [
             {
                 "candidate_name": result["candidate_name"],
                 "overall_match": result["overall_match"],
                 "file_name": result["file_name"],
+                "predicted_role": result["recommended_role"]["role"],
+                "final_rank_score": result["final_rank_score"],
             }
             for result in ranked_results[:3]
         ],
@@ -342,6 +440,14 @@ def analyze_resumes():
             for skill, count in skill_counter.most_common()
         ],
         "total_candidates": len(ranked_results),
+        "candidate_comparisons": [
+            {
+                "candidate_name": result["candidate_name"],
+                "nearest_peer": result["nearest_peer"],
+            }
+            for result in ranked_results
+            if result.get("nearest_peer")
+        ],
     }
 
     RESULTS_CACHE = ranked_results
@@ -419,6 +525,11 @@ def download_results():
         "candidate_name",
         "file_name",
         "overall_match",
+        "final_rank_score",
+        "predicted_rank_score",
+        "predicted_role",
+        "role_confidence",
+        "knn_role_probability",
         "semantic_similarity",
         "tfidf_score",
         "skill_match_percentage",
@@ -427,6 +538,7 @@ def download_results():
         "matched_skills",
         "missing_skills",
         "matched_keywords",
+        "nearest_peer",
     ]
     writer = csv.DictWriter(csv_buffer, fieldnames=field_names)
     writer.writeheader()
@@ -438,6 +550,11 @@ def download_results():
                 "candidate_name": row.get("candidate_name", ""),
                 "file_name": row.get("file_name", ""),
                 "overall_match": row.get("overall_match", ""),
+                "final_rank_score": row.get("final_rank_score", ""),
+                "predicted_rank_score": row.get("predicted_rank_score", ""),
+                "predicted_role": (row.get("recommended_role") or {}).get("role", ""),
+                "role_confidence": (row.get("recommended_role") or {}).get("confidence", ""),
+                "knn_role_probability": row.get("knn_role_probability", ""),
                 "semantic_similarity": row.get("semantic_similarity", ""),
                 "tfidf_score": row.get("tfidf_score", ""),
                 "skill_match_percentage": row.get("skill_match_percentage", ""),
@@ -446,6 +563,7 @@ def download_results():
                 "matched_skills": ", ".join(row.get("matched_skills", [])),
                 "missing_skills": ", ".join(row.get("missing_skills", [])),
                 "matched_keywords": ", ".join(row.get("matched_keywords", [])),
+                "nearest_peer": json.dumps(row.get("nearest_peer", {}), ensure_ascii=False),
             }
         )
 

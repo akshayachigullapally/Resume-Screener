@@ -1,66 +1,70 @@
 {
   "results": [
     {
-      "candidate_name": "JPMC_Akshaya_Resume",
-      "file_name": "bb5a31063bcf48beac7ae7d85e1f3f0f_JPMC_Akshaya_Resume.pdf",
-      "tfidf_score": 26.31,
-      "semantic_similarity": 49.26,
-      "overall_match": 50.35,
-      "resume_strength_score": 49.8,
-      "job_required_experience_years": 4,
+      "candidate_name": "AKSHAYA CHIGULLAPALLY",
+      "file_name": "9b78af3c885a4299a1ec3444db25d78d_Resume_Placements.pdf",
+      "tfidf_score": 15.34,
+      "semantic_similarity": 52.3,
+      "overall_match": 73.41,
+      "resume_strength_score": 77.13,
+      "job_required_experience_years": 0,
       "candidate_experience_years": 0,
-      "experience_match_percentage": 0.0,
+      "experience_match_percentage": 100.0,
       "extracted_skills": [
         "c++",
         "css",
         "git",
         "html",
-        "java",
         "javascript",
         "node",
         "python",
         "react"
       ],
       "matched_skills": [
+        "c++",
+        "css",
         "git",
+        "html",
         "javascript",
-        "node",
+        "python",
         "react"
       ],
       "missing_skills": [
         "aws",
-        "docker",
+        "azure",
+        "java",
         "sql"
       ],
-      "skill_match_percentage": 57.14,
+      "skill_match_percentage": 63.64,
       "matched_keywords": [
-        "stack",
-        "skills",
+        "career",
+        "data",
+        "built",
+        "technical",
+        "tools",
         "react",
-        "github",
-        "full",
-        "software",
-        "development",
-        "next",
-        "node",
-        "express",
-        "mongodb",
-        "ensure"
+        "real",
+        "time",
+        "database",
+        "efficient",
+        "skills",
+        "software"
       ],
       "suggestions": [
         "Add experience with Aws (required in job description).",
         "Add cloud deployments or migrations completed on AWS.",
-        "Add experience with Docker (required in job description).",
-        "Add experience with Sql (required in job description).",
-        "Highlight skills like Git, Javascript, Node more clearly in your resume."
+        "Add experience with Azure (required in job description).",
+        "Document Azure-based solutions you have implemented.",
+        "Add experience with Java (required in job description).",
+        "Add experience with Sql (required in job description)."
       ],
-      "explanation": "JPMC_Akshaya_Resume ranks here due to strong overlap in required skills (git, javascript, node, react), but should emphasize aws, docker, sql; needs clearer experience details. Final score: 50.4%",
+      "explanation": "AKSHAYA CHIGULLAPALLY ranks here due to strong overlap in required skills (c++, css, git, html, javascript), experience meets the requirement, but should emphasize aws, azure, java, sql. Final score: 73.4%",
       "section_scores": {
         "skills": {
-          "score": 63.57
+          "score": 60.66
         },
         "experience": {
-          "score": 0.0
+          "score": 79.73
         },
         "projects": {
           "score": 100
@@ -69,56 +73,181 @@
           "score": 73.17
         },
         "skills_score": {
-          "score": 63.57
+          "score": 60.66
         },
         "experience_score": {
-          "score": 0.0
+          "score": 79.73
         },
         "project_score": {
           "score": 100
         }
       },
       "recommended_role": {
-        "role": "Backend Developer",
-        "confidence": 30.0,
+        "role": "Data Science",
+        "confidence": 18.71,
         "alternatives": [
           {
-            "role": "Frontend Developer",
-            "score": 10
+            "role": "Testing",
+            "score": 6.89
           },
           {
-            "role": "Full Stack Developer",
-            "score": 9
+            "role": "Blockchain",
+            "score": 6.62
           },
           {
-            "role": "ML Engineer",
-            "score": 4
+            "role": "Data Science",
+            "score": 6.58
           }
         ]
       },
+      "svm_role_probabilities": [
+        {
+          "role": "DevOps Engineer",
+          "score": 8.19
+        },
+        {
+          "role": "Testing",
+          "score": 6.89
+        },
+        {
+          "role": "Blockchain",
+          "score": 6.62
+        },
+        {
+          "role": "Data Science",
+          "score": 6.58
+        },
+        {
+          "role": "HR",
+          "score": 6.1
+        }
+      ],
+      "knn_role_probability": 43.27,
+      "knn_role_probabilities": [
+        {
+          "role": "Data Science",
+          "score": 43.27
+        },
+        {
+          "role": "Blockchain",
+          "score": 28.99
+        },
+        {
+          "role": "Business Analyst",
+          "score": 13.89
+        },
+        {
+          "role": "Operations Manager",
+          "score": 13.86
+        },
+        {
+          "role": "Advocate",
+          "score": 0.0
+        }
+      ],
+      "predicted_rank_score": 55.0,
+      "final_rank_score": 60.32,
+      "nearest_peer": null,
       "score_breakdown": {
-        "overall_score": 50.35,
-        "skills_score": 63.57,
-        "experience_score": 0.0,
+        "overall_score": 73.41,
+        "skills_score": 60.66,
+        "experience_score": 79.73,
         "project_score": 100.0,
-        "semantic_score": 49.26
+        "semantic_score": 52.3
       },
       "rank": 1
     }
   ],
   "analytics": {
+    "job_role_prediction": {
+      "role": "DevOps Engineer",
+      "confidence": 16.56,
+      "alternatives": [
+        {
+          "role": "Testing",
+          "score": 7.85
+        },
+        {
+          "role": "Business Analyst",
+          "score": 7.51
+        },
+        {
+          "role": "Java Developer",
+          "score": 5.9
+        }
+      ],
+      "svm_role_probabilities": [
+        {
+          "role": "DevOps Engineer",
+          "score": 11.47
+        },
+        {
+          "role": "Testing",
+          "score": 7.85
+        },
+        {
+          "role": "Business Analyst",
+          "score": 7.51
+        },
+        {
+          "role": "Java Developer",
+          "score": 5.9
+        },
+        {
+          "role": "Operations Manager",
+          "score": 5.65
+        }
+      ],
+      "knn_role_probability": 28.44,
+      "knn_role_probabilities": [
+        {
+          "role": "PMO",
+          "score": 28.64
+        },
+        {
+          "role": "DevOps Engineer",
+          "score": 28.44
+        },
+        {
+          "role": "Business Analyst",
+          "score": 14.52
+        },
+        {
+          "role": "Operations Manager",
+          "score": 14.33
+        },
+        {
+          "role": "Java Developer",
+          "score": 14.07
+        }
+      ]
+    },
     "top_candidates": [
       {
-        "candidate_name": "JPMC_Akshaya_Resume",
-        "overall_match": 50.35,
-        "file_name": "bb5a31063bcf48beac7ae7d85e1f3f0f_JPMC_Akshaya_Resume.pdf"
+        "candidate_name": "AKSHAYA CHIGULLAPALLY",
+        "overall_match": 73.41,
+        "file_name": "9b78af3c885a4299a1ec3444db25d78d_Resume_Placements.pdf",
+        "predicted_role": "Data Science",
+        "final_rank_score": 60.32
       }
     ],
-    "average_overall_score": 50.35,
-    "average_semantic_score": 49.26,
+    "average_overall_score": 73.41,
+    "average_semantic_score": 52.3,
     "skill_distribution": [
       {
+        "skill": "c++",
+        "count": 1
+      },
+      {
+        "skill": "css",
+        "count": 1
+      },
+      {
         "skill": "git",
+        "count": 1
+      },
+      {
+        "skill": "html",
         "count": 1
       },
       {
@@ -126,7 +255,7 @@
         "count": 1
       },
       {
-        "skill": "node",
+        "skill": "python",
         "count": 1
       },
       {
@@ -134,6 +263,7 @@
         "count": 1
       }
     ],
-    "total_candidates": 1
+    "total_candidates": 1,
+    "candidate_comparisons": []
   }
 }

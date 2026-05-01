@@ -45,6 +45,16 @@ def compute_semantic_similarity_scores(job_description: str, resume_texts: List[
     return [round(float(score), 4) for score in similarities]
 
 
+def compute_pairwise_semantic_similarity(texts: List[str]) -> np.ndarray:
+    if not texts:
+        return np.zeros((0, 0), dtype=float)
+
+    model = _get_sentence_model()
+    embeddings = model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
+    matrix = util.cos_sim(embeddings, embeddings).cpu().numpy()
+    return np.asarray(matrix, dtype=float)
+
+
 def combine_similarity_scores(
     tfidf_scores: Iterable[float], semantic_scores: Iterable[float], tfidf_weight: float = 0.6
 ) -> List[float]:

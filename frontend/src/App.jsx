@@ -89,6 +89,9 @@ function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedMeta, setUploadedMeta] = useState([]);
   const [jobDescription, setJobDescription] = useState("");
+  const [jdFile, setJdFile] = useState(null);
+  const [jdFileName, setJdFileName] = useState("");
+  const [uploadedJdFile, setUploadedJdFile] = useState(null);
   const [results, setResults] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [jobSkills, setJobSkills] = useState([]);
@@ -97,6 +100,7 @@ function App() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingJd, setIsDraggingJd] = useState(false);
   const [advisorResumeText, setAdvisorResumeText] = useState("");
   const [advisorJobDescription, setAdvisorJobDescription] = useState("");
   const [advisorSuggestions, setAdvisorSuggestions] = useState([]);
@@ -138,6 +142,8 @@ function App() {
   const averageOverall = analytics?.average_overall_score ?? 0;
   const averageSemantic = analytics?.average_semantic_score ?? 0;
   const skillDistribution = (analytics?.skill_distribution || []).slice(0, 10);
+  const jobRolePrediction = analytics?.job_role_prediction || null;
+  const candidateComparisons = analytics?.candidate_comparisons || [];
   const activeCandidate = results[activeCandidateIndex] || null;
   const averageScoreLabel = formatPercent(averageOverall);
   const candidateFile = activeCandidate?.file_name || "";
@@ -202,9 +208,76 @@ function App() {
     return data;
   };
 
+  const uploadJdFile = async () => {
+    if (!jdFile) {
+      throw new Error("Please select a JD file.");
+    }
+
+    const formData = new FormData();
+    formData.append("jd_file", jdFile);
+
+    const response = await fetch(`${API_BASE_URL}/upload-jd`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "JD upload failed.");
+    }
+
+    setUploadedJdFile(data.stored_name);
+    setJdFileName(data.original_name);
+    setSuccessMessage(`JD file loaded: ${data.original_name}`);
+    return data.stored_name;
+  };
+
+  const handleJdFileChange = (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (["pdf", "docx"].includes(ext)) {
+        setJdFile(file);
+        setError("");
+      } else {
+        setError("Only PDF and DOCX files are allowed for JD.");
+      }
+    }
+  };
+
+  const onJdDrop = (event) => {
+    event.preventDefault();
+    setIsDraggingJd(false);
+    const files = Array.from(event.dataTransfer.files || []);
+    if (files.length > 0) {
+      const file = files[0];
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (["pdf", "docx"].includes(ext)) {
+        setJdFile(file);
+        setError("");
+      } else {
+        setError("Only PDF and DOCX files are allowed for JD.");
+      }
+    }
+  };
+
+  const onJdDragOver = (event) => {
+    event.preventDefault();
+    setIsDraggingJd(true);
+  };
+
+  const onJdDragLeave = (event) => {
+    event.preventDefault();
+    setIsDraggingJd(false);
+  };
+
   const analyzeCandidates = async () => {
-    if (!jobDescription.trim()) {
-      setError("Please enter a job description before analysis.");
+    const hasJobDescription = jobDescription.trim().length > 0;
+    const hasJdFile = jdFile !== null;
+
+    if (!hasJobDescription && !hasJdFile) {
+      setError("Please enter a job description or upload a JD file.");
       return;
     }
 
@@ -215,13 +288,25 @@ function App() {
 
       const uploadData = await uploadResumes();
 
+      let jdFileToUse = uploadedJdFile;
+      if (jdFile && !uploadedJdFile) {
+        jdFileToUse = await uploadJdFile();
+      }
+
+      const payload = {
+        uploaded_files: (uploadData.uploaded || []).map((item) => item.stored_name),
+      };
+
+      if (jdFileToUse) {
+        payload.jd_file = jdFileToUse;
+      } else if (hasJobDescription) {
+        payload.job_description = jobDescription;
+      }
+
       const response = await fetch(`${API_BASE_URL}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          job_description: jobDescription,
-          uploaded_files: (uploadData.uploaded || []).map((item) => item.stored_name),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -521,26 +606,103 @@ function App() {
                     </Box>
                   )}
 
-                  <TextField
-                    label="Job Description"
-                    multiline
-                    minRows={7}
-                    fullWidth
-                    value={jobDescription}
-                    onChange={(event) => setJobDescription(event.target.value)}
-                    sx={{
-                      mt: 2.2,
-                      "& .MuiInputLabel-root": { color: "rgba(228, 249, 241, 0.86)" },
-                      "& .MuiOutlinedInput-root": {
-                        color: "#f2fffb",
-                        borderRadius: 2.4,
-                        background: "rgba(7, 49, 59, 0.45)",
-                        "& fieldset": { borderColor: "rgba(179, 235, 219, 0.45)" },
-                        "&:hover fieldset": { borderColor: "rgba(205, 248, 234, 0.7)" },
-                        "&.Mui-focused fieldset": { borderColor: "#9ee8d8" },
-                      },
-                    }}
-                  />
+                  <Box sx={{ mt: 2.2 }}>
+                    <Typography sx={{ color: "#dbfef6", fontWeight: 600, mb: 1.5 }}>Job Description</Typography>
+                    
+                    <Box
+                      onDrop={onJdDrop}
+                      onDragOver={onJdDragOver}
+                      onDragLeave={onJdDragLeave}
+                      sx={{
+                        border: "2px dashed",
+                        borderColor: isDraggingJd ? "#9ee8d8" : "rgba(158, 232, 216, 0.45)",
+                        borderRadius: 2.5,
+                        p: 2,
+                        textAlign: "center",
+                        bgcolor: isDraggingJd ? "rgba(225, 255, 244, 0.18)" : "rgba(9, 53, 63, 0.35)",
+                        transition: "all 240ms ease",
+                        mb: 1.5,
+                        "&:hover": {
+                          borderColor: "#9ee8d8",
+                          bgcolor: "rgba(225, 255, 244, 0.14)",
+                        },
+                        cursor: "pointer",
+                      }}
+                    >
+                      <CloudUploadIcon sx={{ fontSize: 32, color: "#d8fff2", mb: 0.5 }} />
+                      <Typography sx={{ fontWeight: 600, color: "#f4fffb", fontSize: 14 }}>
+                        Drag JD file here
+                      </Typography>
+                      <Typography sx={{ color: "rgba(224, 248, 240, 0.7)", fontSize: 12, mb: 1 }}>
+                        or click to browse
+                      </Typography>
+                      <Button
+                        component="label"
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          textTransform: "none",
+                          borderRadius: 2,
+                          color: "#9ee8d8",
+                          borderColor: "rgba(158, 232, 216, 0.6)",
+                          "&:hover": { borderColor: "#9ee8d8", bgcolor: "rgba(158, 232, 216, 0.1)" },
+                        }}
+                      >
+                        Browse
+                        <input hidden type="file" accept=".pdf,.docx" onChange={handleJdFileChange} />
+                      </Button>
+                    </Box>
+
+                    {jdFile && !uploadedJdFile && (
+                      <Typography sx={{ color: "#fceab5", fontSize: 12, mb: 1, fontWeight: 500 }}>
+                        ✓ Selected: {jdFile.name}
+                      </Typography>
+                    )}
+
+                    {uploadedJdFile && (
+                      <Box sx={{ mb: 1.5, p: 1.2, bgcolor: "rgba(15, 82, 90, 0.4)", borderRadius: 1.5 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ color: "#a7f3d0", fontSize: 12, fontWeight: 500 }}>
+                            ✓ Loaded: {jdFileName}
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => {
+                              setUploadedJdFile(null);
+                              setJdFileName("");
+                              setJobDescription("");
+                              setJdFile(null);
+                            }}
+                            sx={{ color: "#ef5350", textTransform: "none", fontSize: 11 }}
+                          >
+                            Clear
+                          </Button>
+                        </Stack>
+                      </Box>
+                    )}
+
+                    <TextField
+                      multiline
+                      minRows={5}
+                      fullWidth
+                      value={jobDescription}
+                      onChange={(event) => setJobDescription(event.target.value)}
+                      disabled={uploadedJdFile !== null}
+                      placeholder={uploadedJdFile ? "JD file loaded" : "Paste job description or upload a file above"}
+                      sx={{
+                        "& .MuiInputLabel-root": { color: "rgba(228, 249, 241, 0.86)" },
+                        "& .MuiOutlinedInput-root": {
+                          color: "#f2fffb",
+                          borderRadius: 2.4,
+                          background: uploadedJdFile ? "rgba(7, 49, 59, 0.25)" : "rgba(7, 49, 59, 0.45)",
+                          "& fieldset": { borderColor: "rgba(179, 235, 219, 0.45)" },
+                          "&:hover fieldset": { borderColor: "rgba(205, 248, 234, 0.7)" },
+                          "&.Mui-focused fieldset": { borderColor: "#9ee8d8" },
+                        },
+                      }}
+                    />
+                  </Box>
 
                   <Stack direction="row" spacing={1.2} sx={{ mt: 2.2 }}>
                     <Button
@@ -770,6 +932,13 @@ function App() {
                     </Card>
                   </Stack>
 
+                  {jobRolePrediction?.role && (
+                    <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+                      Detected JD role: {jobRolePrediction.role}
+                      {jobRolePrediction.confidence ? ` (${formatPercent(jobRolePrediction.confidence)}% confidence)` : ""}
+                    </Alert>
+                  )}
+
                   <Divider sx={{ my: 2 }} />
                   <Typography sx={{ fontWeight: 700, color: "#1f4247", mb: 1 }}>Required JD Skills</Typography>
                   <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
@@ -802,19 +971,40 @@ function App() {
                           key={candidate.file_name}
                           direction="row"
                           justifyContent="space-between"
+                          alignItems="center"
+                          spacing={1}
                           sx={{ p: 1, borderRadius: 2, bgcolor: "#f4fafa" }}
                         >
-                          <Typography sx={{ fontWeight: 600, color: "#173f45" }}>{candidate.candidate_name}</Typography>
-                          <Chip
-                            label={`${formatPercent(candidate.overall_match)}%`}
-                            size="small"
-                            sx={{ bgcolor: "rgba(33, 185, 123, 0.15)", color: "#17805a", fontWeight: 700 }}
-                          />
+                          <Box>
+                            <Typography sx={{ fontWeight: 600, color: "#173f45" }}>{candidate.candidate_name}</Typography>
+                            <Typography sx={{ fontSize: 12.5, color: "#587176" }}>
+                              {candidate.predicted_role || "Generalist"} · Rank score {formatPercent(candidate.final_rank_score || 0)}%
+                            </Typography>
+                          </Box>
+                          <Chip label={`${formatPercent(candidate.overall_match)}%`} size="small" sx={{ bgcolor: "rgba(33, 185, 123, 0.15)", color: "#17805a", fontWeight: 700 }} />
                         </Stack>
                       ))}
                     </Stack>
                   ) : (
                     <Typography sx={{ color: "#5f7074" }}>Run an analysis to populate insights.</Typography>
+                  )}
+
+                  {candidateComparisons.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography sx={{ fontWeight: 700, color: "#1f4247", mb: 0.6 }}>Closest Candidate Comparisons</Typography>
+                      <Stack spacing={0.6}>
+                        {candidateComparisons.slice(0, 4).map((comparison) => (
+                          <Stack key={comparison.candidate_name} direction="row" justifyContent="space-between" sx={{ p: 1, borderRadius: 2, bgcolor: "#f7fbfb" }}>
+                            <Typography sx={{ fontWeight: 600, color: "#173f45" }}>{comparison.candidate_name}</Typography>
+                            <Typography sx={{ color: "#4d6a6f", fontSize: 13 }}>
+                              {comparison.nearest_peer?.candidate_name || "No peer"}
+                              {comparison.nearest_peer?.similarity ? ` · ${formatPercent(comparison.nearest_peer.similarity)}%` : ""}
+                            </Typography>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </>
                   )}
 
                   <Divider sx={{ my: 2 }} />
@@ -852,10 +1042,22 @@ function App() {
                       <Chip label={`TF-IDF: ${formatPercent(activeCandidate.tfidf_score)}%`} sx={{ bgcolor: "#e6f1ff", color: "#1c4e8e", fontWeight: 700 }} />
                       {activeCandidate?.recommended_role?.role && (
                         <Chip
-                          label={`Best suited: ${activeCandidate.recommended_role.role}`}
+                          label={`Predicted Role: ${activeCandidate.recommended_role.role}`}
                           sx={{ bgcolor: "rgba(33, 185, 123, 0.18)", color: "#127055", fontWeight: 700 }}
                         />
                       )}
+                      <Chip
+                        label={`Role Confidence: ${formatPercent(activeCandidate?.recommended_role?.confidence || 0)}%`}
+                        sx={{ bgcolor: "rgba(11, 130, 121, 0.14)", color: "#0d6f66", fontWeight: 700 }}
+                      />
+                      <Chip
+                        label={`KNN Similarity: ${formatPercent(activeCandidate?.knn_role_probability || 0)}%`}
+                        sx={{ bgcolor: "rgba(76, 111, 174, 0.14)", color: "#214b86", fontWeight: 700 }}
+                      />
+                      <Chip
+                        label={`Rank Score: ${formatPercent(activeCandidate?.final_rank_score || 0)}%`}
+                        sx={{ bgcolor: "rgba(240, 165, 0, 0.15)", color: "#9a6500", fontWeight: 700 }}
+                      />
                     </Stack>
 
                     {activeCandidate?.section_scores && (
@@ -919,6 +1121,7 @@ function App() {
                   const borderColor = isActive ? getScoreColor(overallScore) : "rgba(11, 27, 29, 0.12)";
                   const sectionScores = candidate.section_scores || {};
                   const roleFit = candidate.recommended_role || {};
+                  const nearestPeer = candidate.nearest_peer || null;
                   const jobSkillsDetected = jobSkills.length > 0;
                   return (
                     <Card
@@ -963,11 +1166,22 @@ function App() {
                           {roleFit?.role && (
                             <Chip
                               size="small"
-                              label={`Best suited: ${roleFit.role}${roleFit.confidence ? ` (${formatPercent(roleFit.confidence)}% conf.)` : ""}`}
+                              label={`Predicted: ${roleFit.role}${roleFit.confidence ? ` (${formatPercent(roleFit.confidence)}% conf.)` : ""}`}
                               sx={{ bgcolor: "rgba(33, 185, 123, 0.18)", color: "#127055", fontWeight: 700 }}
                             />
                           )}
+                          <Chip size="small" label={`KNN: ${formatPercent(candidate.knn_role_probability || 0)}%`} sx={{ bgcolor: "rgba(76, 111, 174, 0.14)", color: "#214b86", fontWeight: 700 }} />
+                          <Chip size="small" label={`Rank: ${formatPercent(candidate.final_rank_score || 0)}%`} sx={{ bgcolor: "rgba(240, 165, 0, 0.15)", color: "#9a6500", fontWeight: 700 }} />
                         </Stack>
+
+                        {nearestPeer?.candidate_name && (
+                          <Box sx={{ mb: 1.1, p: 1.1, borderRadius: 2, bgcolor: "rgba(10, 123, 131, 0.06)", border: "1px solid rgba(10, 123, 131, 0.12)" }}>
+                            <Typography sx={{ color: "#1c4c53", fontWeight: 700, mb: 0.3 }}>Closest Peer</Typography>
+                            <Typography sx={{ color: "#4d6a6f", fontSize: 14 }}>
+                              {nearestPeer.candidate_name} · {formatPercent(nearestPeer.similarity || 0)}% semantic similarity
+                            </Typography>
+                          </Box>
+                        )}
 
                         {Object.keys(sectionScores).length > 0 && (
                           <Box sx={{ mb: 1.4 }}>
